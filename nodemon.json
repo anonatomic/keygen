@@ -1,0 +1,7 @@
+{
+    "watch": ["src"],
+    "ext": "ts",
+    "ignore": ["src/**/*.spec.ts"],
+    "exec": "node --inspect=25007 -r ts-node/register ./src/bootstrap.ts",
+    "inspect": "25007"
+}
