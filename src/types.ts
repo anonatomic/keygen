@@ -3,9 +3,11 @@ export const IDS = {
         BotFactory: Symbol('BotFactory')
     },
     SERVICE:{
-        AddressGenerator: Symbol('AddressGenerator')
+        AddressGenerator: Symbol('AddressGenerator'),
+        MnemonicResponseGenerator: Symbol('MnemonicResponseGenerator'),
     },
     Telegraf: Symbol('Telegraf'),
     BotInitializer: Symbol('BotInitializer'),
-    SolanaKeypair: Symbol('SolanaKeypair')
+    SolanaKeypair: Symbol('SolanaKeypair'),
+    
 };

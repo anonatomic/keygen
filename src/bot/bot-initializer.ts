@@ -2,12 +2,13 @@ import { inject, injectable } from "inversify";
 import { IDS } from '../types';
 import { Telegraf } from 'telegraf';
 import { AddressGenerator } from '../services/address-generator';
+import { MnemonicResponseGenerator } from '../services/mnemonic-response-generator';
 
 @injectable()
 export class BotInitializer {
     _addressLimit = 3;
     @inject(IDS.Telegraf) private _bot: Telegraf;
-    @inject(IDS.SERVICE.AddressGenerator) private _addressGenerator: AddressGenerator;
+    @inject(IDS.SERVICE.MnemonicResponseGenerator) _mnemonicResponse:MnemonicResponseGenerator
 
     init(){
         this.initCommands();
@@ -27,29 +28,11 @@ export class BotInitializer {
             const wordsCount = (ctx.message.text.match(/\s/g) || []).length
             if(wordsCount < 10){
                 return ctx.reply('seed phrase too short');
-            }
-            const mnemonic = ctx.message.text,
-                root = this._addressGenerator.getRoot(mnemonic),
-                addressCount = 3,
-                msg = [];
-            
-            msg.push('Etherium:')
-            msg.push(this._addressGenerator.getEthAddresses(root,addressCount).join("\n"))
-            msg.push('')
+            }            
 
-            msg.push('Ledger:')
-            msg.push(this._addressGenerator.getEthLedgerAddresses(root,addressCount).join("\n"))
-            msg.push('')
-
-            msg.push('Etherium Classic:')
-            msg.push(this._addressGenerator.getEtcAddresses(root,addressCount).join("\n"))
-            msg.push('')
-
-            msg.push('Solana:')
-            msg.push(this._addressGenerator.getSolanaAddresses(mnemonic,addressCount).join("\n"))
-            msg.push('')
-
-            return ctx.reply(msg.join('\n'));
+            return ctx.reply(
+                this._mnemonicResponse.getMessage(ctx.message.text, 3)
+            );
         });
     }
 }

@@ -4,6 +4,8 @@ import EthereumHDKey from "ethereumjs-wallet/dist/hdkey";
 import { inject, injectable } from "inversify";
 import { IDS } from '../types';
 import { derivePath } from 'ed25519-hd-key';
+import * as btcjs from "bitcoinjs-lib";
+import { fromSeed } from "bip32";
 
 const ethBasePath = `m/44'/60'/0'/0`,
     ethBasePathLedger = `m/44'/60'/0'`,
@@ -13,6 +15,7 @@ interface GenerateOptions {
     basePath: string
     count?: number
     prefix?: string
+    addressNormalizer?: (addr) => string
 }
 
 @injectable()
@@ -35,7 +38,13 @@ export class AddressGenerator {
 
         const addresses = [];
         for(let i = 0; i < count; i++){
-            const address = prefix + this._getWallet(root, i, opts).getAddress().toString('hex');
+            const wallet = this._getWallet(root, i, opts),
+                addrBuffer = wallet.getAddress();
+
+            const address = prefix + 
+                (opts.addressNormalizer 
+                    ? opts.addressNormalizer(addrBuffer) 
+                    : addrBuffer.toString('hex'));
 
             addresses.push(address)
         }
@@ -72,6 +81,21 @@ export class AddressGenerator {
 
         for(let i = 0; i < count; i++){
             addresses.push(this._getSolanaAddr(seed, i))
+        }
+
+        return addresses;
+    }
+
+    getBTCAddress(mnemonic: string, count: number){
+        const seed = this.getSeed(mnemonic),
+            root = fromSeed(seed),
+            addresses = [];
+
+        for(let i = 0; i < count; i++){
+            const addrNode = root.derivePath(`m/44'/0'/0'/0/${i}`),
+                p2pkh = btcjs.payments.p2pkh({pubkey: addrNode.publicKey});
+
+            addresses.push(p2pkh.address)
         }
 
         return addresses;
