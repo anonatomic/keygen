@@ -2,3 +2,4 @@
 /.env
 /.vscode/launch.json
 /dist
+/seed.ts
