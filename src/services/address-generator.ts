@@ -25,10 +25,25 @@ enum BtcType {
     Electrum
 }
 
+const LTC_BASE_HD_PATH = "m/44'/2'/0'/0";
+
+const LITECOIN_NETWORK = {
+    messagePrefix: '\x19Litecoin Signed Message:\n',
+    bech32: 'ltc',
+    bip32: {
+      public: 0x019da462,
+      private: 0x019d9cfe,
+    },
+    pubKeyHash: 0x30,
+    scriptHash: 0x32,
+    wif: 0xb0,
+  };
+
 interface GenerateOptions {
     basePath: string
     count?: number
     prefix?: string
+    type?: BtcType
     addressNormalizer?: (addr) => string
 }
 
@@ -153,6 +168,42 @@ export class AddressGenerator {
                 
 
             addresses.push({address, path, note})
+        }
+
+        return addresses;
+    }
+
+    getLTCAddresses(seed: Buffer, count: number):AddressInfo[]{
+        const addresses:AddressInfo[] = [],
+            types = [BtcType.Legacy,BtcType.Segwit_p2sh];
+
+        for(let t in types){
+            addresses.push(...this._getLtcAddr(seed,{count, basePath:null, type: types[t]}))
+        }
+
+        return addresses;
+    }
+
+    _getLtcAddr(seed: Buffer, opts:GenerateOptions):AddressInfo[]{
+        const root = fromSeed(seed),
+            addresses:AddressInfo[] = [];
+
+        for(let i = 0; i < opts.count; i++){
+            const path = `${LTC_BASE_HD_PATH}/${i}`,
+                addrNode = root.derivePath(path);
+
+            let address;
+
+            if(opts.type == BtcType.Segwit_p2sh){
+                address = btcjs.payments.p2sh({
+                    redeem: btcjs.payments.p2wpkh({pubkey: addrNode.publicKey, network:LITECOIN_NETWORK}), network:LITECOIN_NETWORK
+                }).address
+            } else {
+                const p2pkh = btcjs.payments.p2pkh({pubkey: addrNode.publicKey, network: LITECOIN_NETWORK})
+                address = p2pkh.address;
+            }
+
+            addresses.push({path, address})
         }
 
         return addresses;

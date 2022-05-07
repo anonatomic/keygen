@@ -30,7 +30,11 @@ export class MnemonicResponseGenerator {
 
             msg.push('Bitcoin:')
             msg.push(this._addressGenerator.getBtcAddresses(seed,1).map(foramtAddress).join("\n"))
-            msg.push('') 
+            msg.push('')
+
+            msg.push('Litecoin:')
+            msg.push(this._addressGenerator.getLTCAddresses(seed,addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
 
             return msg.join('\n')
     }
