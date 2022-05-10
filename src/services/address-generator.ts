@@ -1,4 +1,4 @@
-import { Enum, Keypair } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { mnemonicToSeedSync } from "bip39";
 import EthereumHDKey from "ethereumjs-wallet/dist/hdkey";
 import { inject, injectable } from "inversify";
@@ -6,6 +6,7 @@ import { IDS } from '../types';
 import { derivePath } from 'ed25519-hd-key';
 import * as btcjs from "bitcoinjs-lib";
 import { fromSeed } from "bip32";
+import * as cardano from 'cardano-wallet';
 
 const ethBasePath = `m/44'/60'/0'/0`,
     ethBasePathLedger = `m/44'/60'/0'`,
@@ -25,8 +26,6 @@ enum BtcType {
     Electrum
 }
 
-const LTC_BASE_HD_PATH = "m/44'/2'/0'/0";
-
 const LITECOIN_NETWORK = {
     messagePrefix: '\x19Litecoin Signed Message:\n',
     bech32: 'ltc',
@@ -44,6 +43,7 @@ interface GenerateOptions {
     count?: number
     prefix?: string
     type?: BtcType
+    network?: any
     addressNormalizer?: (addr) => string
 }
 
@@ -135,7 +135,7 @@ export class AddressGenerator {
         for(let i in types){
             for(let j in paths){
                 for(let index = 0; index < count; index++){
-                    addresses.push(...this._getBTCAddress(seed, count, types[i], paths[j]))
+                    addresses.push(...this._getBTCAddress(seed, {count, type:types[i], basePath: paths[j], network: btcjs.networks.bitcoin }))
                 }
             }
         }
@@ -143,26 +143,27 @@ export class AddressGenerator {
         return addresses;
     }
 
-    _getBTCAddress(seed: Buffer, count: number, type: BtcType, basePath: string):AddressInfo[]{
+    _getBTCAddress(seed: Buffer, opts:GenerateOptions):AddressInfo[]{
         const root = fromSeed(seed),
             addresses:AddressInfo[] = [];
 
-        for(let i = 0; i < count; i++){
-            const path = `${basePath}/${i}`,
-                addrNode = root.derivePath(path);
+        for(let i = 0; i < opts.count; i++){
+            const path = `${opts.basePath}/${i}`,
+                addrNode = root.derivePath(path),
+                network = opts.network || null;
 
                 let address:string;
                 let note: string;
-                if(type == BtcType.Segwit){
-                    address = btcjs.payments.p2wpkh({pubkey: addrNode.publicKey}).address;
+                if(opts.type == BtcType.Segwit){
+                    address = btcjs.payments.p2wpkh({pubkey: addrNode.publicKey, network}).address;
                     note = 'segwit p2wpkh'
-                } else if(type == BtcType.Segwit_p2sh){
+                } else if(opts.type == BtcType.Segwit_p2sh){
                     address = btcjs.payments.p2sh({
-                        redeem: btcjs.payments.p2wpkh({pubkey: addrNode.publicKey})
+                        redeem: btcjs.payments.p2wpkh({pubkey: addrNode.publicKey, network}), network
                     }).address
                     note = 'segwit p2sh'
                 } else {
-                    address = btcjs.payments.p2pkh({pubkey: addrNode.publicKey}).address;
+                    address = btcjs.payments.p2pkh({pubkey: addrNode.publicKey, network}).address;
                     note = 'p2pkh'
                 }
                 
@@ -175,37 +176,45 @@ export class AddressGenerator {
 
     getLTCAddresses(seed: Buffer, count: number):AddressInfo[]{
         const addresses:AddressInfo[] = [],
-            types = [BtcType.Legacy,BtcType.Segwit_p2sh];
+            types = [BtcType.Legacy,BtcType.Segwit_p2sh,BtcType.Segwit],
+            paths = [`m/44'/2'/0'/0`,`m/44'/60'/0'/0`];
 
-        for(let t in types){
-            addresses.push(...this._getLtcAddr(seed,{count, basePath:null, type: types[t]}))
+        for(let p in paths){
+            for(let t in types){
+                addresses.push(...this._getBTCAddress(seed,{count, basePath:paths[p], type: types[t], network: LITECOIN_NETWORK}))
+            }
         }
 
         return addresses;
     }
 
-    _getLtcAddr(seed: Buffer, opts:GenerateOptions):AddressInfo[]{
-        const root = fromSeed(seed),
-            addresses:AddressInfo[] = [];
+    getADAAddresses(mnemonic: string, count: number):AddressInfo[]{
+        const addresses: AddressInfo[] = [];
 
-        for(let i = 0; i < opts.count; i++){
-            const path = `${LTC_BASE_HD_PATH}/${i}`,
-                addrNode = root.derivePath(path);
+        const entropy = cardano.Entropy.from_english_mnemonics(mnemonic);
+        const wallet = cardano.Bip44RootPrivateKey.recover(entropy,'');
 
-            let address;
+        const accIndex = cardano.AccountIndex.new(0 | 0x80000000);
+        const account = wallet.bip44_account(accIndex);
+        const accountPublic = account.public();
 
-            if(opts.type == BtcType.Segwit_p2sh){
-                address = btcjs.payments.p2sh({
-                    redeem: btcjs.payments.p2wpkh({pubkey: addrNode.publicKey, network:LITECOIN_NETWORK}), network:LITECOIN_NETWORK
-                }).address
-            } else {
-                const p2pkh = btcjs.payments.p2pkh({pubkey: addrNode.publicKey, network: LITECOIN_NETWORK})
-                address = p2pkh.address;
-            }
-
-            addresses.push({path, address})
+        const chainPub = accountPublic.bip44_chain(false);
+        
+        for(let i = 0; i < count; i++){
+            addresses.push(this._getADAAddr(chainPub, i))
         }
 
         return addresses;
+    }
+
+    _getADAAddr(chainPub:cardano.Bip44ChainPublic , index):AddressInfo{
+        
+        const addrIndex = cardano.AddressKeyIndex.new(index);
+        const keyPub = chainPub.address_key(addrIndex);
+
+        const settings = cardano.BlockchainSettings.mainnet();
+        const address = keyPub.bootstrap_era_address(settings);
+
+        return {address: address.to_base58(), path: `m/44'/1815'/0'/0/${index}`};
     }
 }

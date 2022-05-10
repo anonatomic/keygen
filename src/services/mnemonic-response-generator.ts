@@ -36,6 +36,10 @@ export class MnemonicResponseGenerator {
             msg.push(this._addressGenerator.getLTCAddresses(seed,addressCount).map(foramtAddress).join("\n"))
             msg.push('')
 
+            msg.push('Cardano:')
+            msg.push(this._addressGenerator.getADAAddresses(mnemonic,addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
+
             return msg.join('\n')
     }
 }
