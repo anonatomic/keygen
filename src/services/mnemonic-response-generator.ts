@@ -40,6 +40,14 @@ export class MnemonicResponseGenerator {
             msg.push(this._addressGenerator.getADAAddresses(mnemonic,addressCount).map(foramtAddress).join("\n"))
             msg.push('')
 
+            msg.push('Dash:')
+            msg.push(this._addressGenerator.getDashAddresses(seed,addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
+
+            msg.push('Atom:')
+            msg.push(this._addressGenerator.getAtomAddresses(seed,addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
+
             return msg.join('\n')
     }
 }

@@ -14,10 +14,12 @@
   "license": "ISC",
   "dependencies": {
     "@solana/web3.js": "^1.41.3",
+    "bech32": "^1.1.4",
     "bip32": "^2.0.5",
     "bip39": "^3.0.4",
     "bitcoinjs-lib": "^6.0.1",
     "cardano-wallet": "^1.2.2",
+    "create-hash": "^1.2.0",
     "dotenv": "^16.0.0",
     "ed25519-hd-key": "^1.2.0",
     "ethereumjs-wallet": "^1.0.2",

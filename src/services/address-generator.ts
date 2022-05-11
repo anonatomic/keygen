@@ -5,8 +5,10 @@ import { inject, injectable } from "inversify";
 import { IDS } from '../types';
 import { derivePath } from 'ed25519-hd-key';
 import * as btcjs from "bitcoinjs-lib";
-import { fromSeed } from "bip32";
+import { BIP32Interface, fromSeed } from "bip32";
 import * as cardano from 'cardano-wallet';
+import * as createHash from 'create-hash';
+import * as bech32 from 'bech32';
 
 const ethBasePath = `m/44'/60'/0'/0`,
     ethBasePathLedger = `m/44'/60'/0'`,
@@ -37,6 +39,17 @@ const LITECOIN_NETWORK = {
     scriptHash: 0x32,
     wif: 0xb0,
   };
+
+const DASH_NETWORK = {
+    messagePrefix: 'unused',
+    bip32: {
+        public: 0x0488b21e,
+        private: 0x0488ade4
+    },
+    pubKeyHash: 0x4c,
+    scriptHash: 0x10,
+    wif: 0xcc
+};
 
 interface GenerateOptions {
     basePath: string
@@ -154,7 +167,9 @@ export class AddressGenerator {
 
                 let address:string;
                 let note: string;
-                if(opts.type == BtcType.Segwit){
+                if(opts.addressNormalizer){
+                    address = opts.addressNormalizer(addrNode);
+                } else if(opts.type == BtcType.Segwit){
                     address = btcjs.payments.p2wpkh({pubkey: addrNode.publicKey, network}).address;
                     note = 'segwit p2wpkh'
                 } else if(opts.type == BtcType.Segwit_p2sh){
@@ -216,5 +231,30 @@ export class AddressGenerator {
         const address = keyPub.bootstrap_era_address(settings);
 
         return {address: address.to_base58(), path: `m/44'/1815'/0'/0/${index}`};
+    }
+
+    getDashAddresses(seed:Buffer, count: number){
+        return this._getBTCAddress(
+            seed,{
+                count, 
+                basePath:`m/44'/5'/0'/0`,
+                type: BtcType.Legacy,
+                network: DASH_NETWORK
+            })
+    }
+
+    getAtomAddresses(seed: Buffer, count: number){
+        return this._getBTCAddress(
+            seed,{
+                count, 
+                basePath:`m/44'/118'/0'/0`,
+                type: BtcType.Legacy,
+                addressNormalizer: (addrNode:BIP32Interface)=>{
+                    const hrp = "cosmos";
+                    const sha256_ed = createHash("sha256").update(addrNode.publicKey).digest();
+                    const ripemd160_ed = createHash("rmd160").update(sha256_ed).digest();
+                    return bech32.encode(hrp, bech32.toWords(ripemd160_ed));
+                }
+            })
     }
 }
