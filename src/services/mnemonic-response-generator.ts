@@ -48,6 +48,10 @@ export class MnemonicResponseGenerator {
             msg.push(this._addressGenerator.getAtomAddresses(seed,addressCount).map(foramtAddress).join("\n"))
             msg.push('')
 
+            msg.push('Doge:')
+            msg.push(this._addressGenerator.getDogeAddresses(seed,addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
+
             return msg.join('\n')
     }
 }

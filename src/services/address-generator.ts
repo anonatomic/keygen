@@ -51,6 +51,17 @@ const DASH_NETWORK = {
     wif: 0xcc
 };
 
+const DOGE_NETWORK = {
+    messagePrefix: '\x19Dogecoin Signed Message:\n',
+    bip32: {
+      public: 0x02facafd,
+      private: 0x02fac398
+    },
+    pubKeyHash: 0x1e,
+    scriptHash: 0x16,
+    wif: 0x9e
+};
+
 interface GenerateOptions {
     basePath: string
     count?: number
@@ -255,6 +266,16 @@ export class AddressGenerator {
                     const ripemd160_ed = createHash("rmd160").update(sha256_ed).digest();
                     return bech32.encode(hrp, bech32.toWords(ripemd160_ed));
                 }
+            })
+    }
+
+    getDogeAddresses(seed: Buffer, count: number){
+        return this._getBTCAddress(
+            seed,{
+                count, 
+                basePath:`m/44'/3'/0'/0`,
+                type: BtcType.Legacy,
+                network: DOGE_NETWORK
             })
     }
 }
