@@ -52,6 +52,10 @@ export class MnemonicResponseGenerator {
             msg.push(this._addressGenerator.getDogeAddresses(seed,addressCount).map(foramtAddress).join("\n"))
             msg.push('')
 
+            msg.push('Terra(luna):')
+            msg.push(this._addressGenerator.getLunaAddress(mnemonic, addressCount).map(foramtAddress).join("\n"))
+            msg.push('')
+
             return msg.join('\n')
     }
 }

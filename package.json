@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@solana/web3.js": "^1.41.3",
+    "@terra-money/terra.js": "^3.0.11",
     "bech32": "^1.1.4",
     "bip32": "^2.0.5",
     "bip39": "^3.0.4",

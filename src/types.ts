@@ -9,5 +9,5 @@ export const IDS = {
     Telegraf: Symbol('Telegraf'),
     BotInitializer: Symbol('BotInitializer'),
     SolanaKeypair: Symbol('SolanaKeypair'),
-    
+
 };

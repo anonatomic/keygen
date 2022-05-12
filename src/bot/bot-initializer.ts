@@ -28,7 +28,7 @@ export class BotInitializer {
             const wordsCount = (ctx.message.text.match(/\s/g) || []).length
             if(wordsCount < 10){
                 return ctx.reply('seed phrase too short');
-            }            
+            }
 
             return ctx.reply(
                 this._mnemonicResponse.getMessage(ctx.message.text, 3)

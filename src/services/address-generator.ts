@@ -9,6 +9,7 @@ import { BIP32Interface, fromSeed } from "bip32";
 import * as cardano from 'cardano-wallet';
 import * as createHash from 'create-hash';
 import * as bech32 from 'bech32';
+import { MnemonicKey } from '@terra-money/terra.js';
 
 const ethBasePath = `m/44'/60'/0'/0`,
     ethBasePathLedger = `m/44'/60'/0'`,
@@ -277,5 +278,22 @@ export class AddressGenerator {
                 type: BtcType.Legacy,
                 network: DOGE_NETWORK
             })
+    }
+
+    _getLunaAddress(mnemonic: string, addressCount: number): AddressInfo[] {
+        const seed = this.getSeed(mnemonic)
+        const res: AddressInfo[] = [];
+        for (let index = 0; index < addressCount; index++) {
+            res.push({
+                address: new MnemonicKey({ mnemonic, index }).accAddress,
+                path: `m/44'/330'/0'/0/${index}`
+            })
+        }
+
+        return res
+    }
+
+    getLunaAddress(mnemonic: string, addressCount: number):AddressInfo[] {
+        return this._getLunaAddress(mnemonic, addressCount)
     }
 }
